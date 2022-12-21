@@ -20,12 +20,16 @@ class SeqLogger {
   /// default value is 50
   static int _batchSize = 50;
 
+  /// YOUR API KEY for seqLogger API
+  static String? _apiKey;
+
   /// The host address of your API End Point
   /// ex: https://yourdomain.com/api/add-log
   static String _url = "";
 
-  static init({required String url, int? batchSize}) {
+  static init({required String url, int? batchSize, String? apiKey}) {
     _url = url;
+    _apiKey = apiKey;
     if (batchSize != null) _batchSize = batchSize;
     _initialized = true;
     log("SeqLogger is initialized", name: "SeqLogger");
@@ -134,6 +138,9 @@ class LoggerNetworkProvider {
     dio.options.baseUrl = SeqLogger._url;
     dio.options.responseType = ResponseType.json;
     dio.options.contentType = "text/plain";
+    if (SeqLogger._apiKey != null && SeqLogger._apiKey!.isNotEmpty) {
+      dio.options.headers.addAll({"X-Api-Key": SeqLogger._apiKey});
+    }
     try {
       final response = await dio.post(SeqLogger._url, data: dataList);
 
