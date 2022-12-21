@@ -14,7 +14,7 @@ This will add a line like this to your package's pubspec.yaml (and run an implic
 
 ```
 dependencies:
-  seq_logger: ^1.0.1
+  seq_logger: ^1.0.3
 ```
 
 Alternatively, your editor might support flutter pub get. Check the docs for your editor to learn more.
@@ -30,7 +30,7 @@ Init Package in your main function.
 ```
 void main() {
   if (!SeqLogger.initialized) {
-    SeqLogger.init(url: "YOUR_API_ENDPOINT_URL_HERE");
+    SeqLogger.init(url: "YOUR_API_ENDPOINT_URL_HERE", apiKey: "YOUR_API_KEY");
   }
 
   runApp(const MyApp());

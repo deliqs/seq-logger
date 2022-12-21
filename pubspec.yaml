@@ -1,6 +1,6 @@
 name: seq_logger
 description: The package that writes the logs to the database and sends these logs to the SEQ LOG Api service.
-version: 1.0.2
+version: 1.0.3
 repository: https://github.com/Performans-Dev/seq_logger/
 environment:
   sdk: '>=2.18.4 <3.0.0'

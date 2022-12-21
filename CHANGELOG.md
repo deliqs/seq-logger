@@ -1,3 +1,6 @@
+## 1.0.3
+* Added API_KEY support
+
 ## 1.0.2
 * Code cleanup
 * Updated documentation
