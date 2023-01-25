@@ -101,7 +101,8 @@ class SeqLogger {
   static Future<void> sendLogs() async {
     if (!initialized) {
       /// Not supposed to run before initialization
-      throw Exception("You must initialize Logger first. Host address is required.");
+      throw Exception(
+          "You must initialize Logger first. Host address is required.");
     }
 
     var logs = await _LoggerDbProvider.db.getLogs();
@@ -174,7 +175,8 @@ class _LoggerDbProvider {
   initDb() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'seq_logger_db.sqflite');
-    return await openDatabase(path, version: 1, singleInstance: true, onCreate: (Database db, int version) async {
+    return await openDatabase(path, version: 1, singleInstance: true,
+        onCreate: (Database db, int version) async {
       await db.execute(LoggerDbConstants.dropTableItems);
       await db.execute(LoggerDbConstants.createTableItems);
     }, onUpgrade: (Database db, int oldVersion, int newVersion) async {
@@ -186,7 +188,8 @@ class _LoggerDbProvider {
   }
 
   /// Method that adds logs to database
-  Future<int> insert({required LogModel logModel, Map<String, dynamic>? data}) async {
+  Future<int> insert(
+      {required LogModel logModel, Map<String, dynamic>? data}) async {
     final db = await database;
     if (db == null) return -1;
     try {
@@ -208,7 +211,8 @@ class _LoggerDbProvider {
         LoggerDbConstants.keyData: mapString,
       };
 
-      int id = await db.insert(LoggerDbConstants.itemsTable, dbMap, conflictAlgorithm: ConflictAlgorithm.replace);
+      int id = await db.insert(LoggerDbConstants.itemsTable, dbMap,
+          conflictAlgorithm: ConflictAlgorithm.replace);
       return id;
     } catch (err) {
       log(err.toString(), name: "SeqLogger");
