@@ -66,4 +66,4 @@ Gives the number of logs stored in the database.
  
  ```
  
- (https://img.shields.io/pub/points/seq_logger)
+ ![score](https://img.shields.io/pub/points/seq_logger)
