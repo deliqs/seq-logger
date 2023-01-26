@@ -65,5 +65,5 @@ Gives the number of logs stored in the database.
  int count = await SeqLogger.getRecordCount();
  
  ```
- 
- ![score](https://img.shields.io/pub/points/seq_logger)
+  
+![score](https://img.shields.io/pub/points/seq_logger)
