@@ -1,6 +1,6 @@
 name: seq_logger
 description: The package that writes the logs to the database and sends these logs to the SEQ LOG Api service.
-version: 1.0.5
+version: 1.0.6
 repository: https://github.com/Performans-Dev/seq_logger/
 environment:
   sdk: '>=2.18.4 <3.0.0'
@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^4.0.6
+  dio: ^5.0.1
   intl: ^0.18.0
   path: ^1.8.2
   path_provider: ^2.0.12

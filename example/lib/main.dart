@@ -1,15 +1,17 @@
-import 'dart:math';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:seq_logger/seq_logger.dart';
 
 void main() {
   if (!SeqLogger.initialized) {
-    SeqLogger.init(url: "YOUR_API_ENDPOINT_URL_HERE");
+    SeqLogger.init(
+      url: 'your_seq_url_here',
+      apiKey: "YOUR_APIKEY_HERE",
+      batchSize: 50,
+    );
   }
-
   runApp(const MyApp());
-
 }
 
 class MyApp extends StatelessWidget {
@@ -18,161 +20,177 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MyPage(),
+      home: HomeScreen(),
     );
   }
 }
 
-class MyPage extends StatefulWidget {
-  const MyPage({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<MyPage> createState() => _MyPageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyPageState extends State<MyPage> {
-  int recordCount = 0;
+class _HomeScreenState extends State<HomeScreen> {
+  late TextEditingController messageController;
+  late TextEditingController dataController;
+  LogLevel selectedLogLevel = LogLevel.debug;
+  String logUsageText = "";
+  bool dataError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    messageController = TextEditingController();
+    dataController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    dataController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        centerTitle: true,
-        title: const Text("SeqLogger Example"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () => SeqLogger.sendLogs(),
+          )
+        ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.green.shade300),
-                ),
-                onPressed: (() async {
-                  int recCount = await SeqLogger.getRecordCount();
-                  setState(() {
-                    recordCount = recCount;
-                  });
-                }),
-                child: Text(
-                  "Click:  $recordCount",
-                  style: const TextStyle(fontSize: 24),
-                  textAlign: TextAlign.center,
-                ),
+            TextField(
+              controller: messageController,
+              maxLines: 1,
+              onChanged: (value) => populateSampleData(),
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Your Message Template",
+                  hintText: "my foo value is {foo} and {mySample}"),
+            ),
+            DropdownButton<LogLevel>(
+              value: selectedLogLevel,
+              items: const [
+                DropdownMenuItem<LogLevel>(
+                    value: LogLevel.info, child: Text("info")),
+                DropdownMenuItem<LogLevel>(
+                    value: LogLevel.warning, child: Text("warning")),
+                DropdownMenuItem<LogLevel>(
+                    value: LogLevel.debug, child: Text("debug")),
+                DropdownMenuItem<LogLevel>(
+                    value: LogLevel.error, child: Text("error")),
+                DropdownMenuItem<LogLevel>(
+                    value: LogLevel.verbose, child: Text("verbose")),
+              ],
+              onChanged: (LogLevel? v) {
+                if (v != null) {
+                  setState(() => selectedLogLevel = v);
+                }
+                populateSampleData();
+              },
+            ),
+            TextField(
+              controller: dataController,
+              minLines: 5,
+              maxLines: 10,
+              onChanged: (value) => populateSampleData(),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: "Log Map Data",
+                hintText: '''
+{
+  "foo": "bar",
+  "mySample": true,
+}
+                ''',
               ),
             ),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.blueAccent.shade200),
-                ),
+            const Divider(),
+            const Text("Usage"),
+            Text(dataError
+                ? "Cannot parse 'Log Map Data' as Map"
+                : logUsageText),
+            ElevatedButton(
+                onPressed: logUsageText.isEmpty
+                    ? null
+                    : () {
+                        SeqLogger.addLogToDb(
+                            message: messageController.text,
+                            level: selectedLogLevel,
+                            data: dataController.text.isEmpty
+                                ? null
+                                : json.decode(dataController.text));
+                      },
+                child: const Text("Add Log")),
+            const Divider(),
+            ElevatedButton(
                 onPressed: () {
-                  String sampleLog = sampleLogs.first;
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) {
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: TextField(
-                                    autofocus: true,
-                                    controller: TextEditingController(text: Utils.generateRandom()),
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      hintText: 'Enter ',
-                                    )),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      var r = sampleLog;
-                                      SeqLogger.logInfo(message: r);
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text("Save"),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text("Back"),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                  SeqLogger.addLogToDb(
+                    message: "APP my foo is {foo}, my boolean is {b}",
+                    data: {
+                      "foo": "bar",
+                      "b": true,
+                      "additional": [
+                        {"complexObject": 1},
+                        {"complexObject": 2, "hello": "world"},
+                      ]
                     },
-                    isScrollControlled: true,
+                    level: LogLevel.info,
                   );
                 },
-                child: const Text(
-                  "Add Sample",
-                  style: TextStyle(fontSize: 24),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.purple.shade300),
-                ),
-                onPressed: () {
-                  SeqLogger.sendLogs();
-                },
-                child: const Text(
-                  "Send",
-                  style: TextStyle(fontSize: 24),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
+                child: const Text("Add a Random Log"))
           ],
         ),
       ),
     );
   }
-}
 
-const List<String> sampleLogs = [
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-  "Sed ultricies metus ut ultrices commodo.",
-  "Etiam ut nisi ac urna tempor vehicula",
-  "Cras vitae magna eleifend, imperdiet ex eget, rutrum dolor.",
-  "Aliquam porttitor dolor sed efficitur porttitor.",
-  "Donec a justo id felis hendrerit scelerisque.",
-  "Pellentesque id nunc dignissim, volutpat lectus eget, vestibulum metus.",
-  "Curabitur sed lorem ut erat vestibulum posuere consequat vitae metus.",
-  "Quisque lobortis leo ut tristique faucibus.",
-  "Nam eget mi non nibh sagittis ultricies.",
-  "Vestibulum sed neque ac sem dictum ullamcorper.",
-  "Maecenas vitae nulla volutpat diam dignissim rhoncus.",
-  "Nulla fermentum lectus vel iaculis posuere.",
-  "Cras eget erat at erat suscipit porttitor id ut libero.",
-];
+  void populateSampleData() {
+    if (messageController.text.isNotEmpty) {
+      if (dataController.text.isEmpty) {
+        setState(() => dataError = false);
+        setState(() {
+          logUsageText = '''
+SeqLogger.addLogToDb(
+  message: "${messageController.text}",
+  level: $selectedLogLevel,
+);
+              ''';
+        });
+      } else {
+        try {
+          Map<String, dynamic> dataMap = json.decode(dataController.text);
 
-class Utils {
-  static String generateRandom() {
-    final random = Random();
-    const availableChars = sampleLogs;
-    final randomString = List.generate(1, (index) => availableChars[random.nextInt(availableChars.length)]).join();
-
-    return randomString;
+          setState(() => dataError = false);
+          setState(() {
+            logUsageText = '''
+SeqLogger.addLogToDb(
+  message: "${messageController.text}",
+  level: $selectedLogLevel,
+  data: ${json.encode(dataMap)}
+);
+              ''';
+          });
+        } catch (ex) {
+          setState(() => dataError = true);
+        }
+      }
+    } else {
+      setState(() {
+        logUsageText = '';
+      });
+    }
   }
 }

@@ -41,8 +41,6 @@ class SeqLogger {
   ///
   /// (Enum) level: importance level of your log, default is info
   ///
-  /// (String?) l: String presentation of your error exception.
-  ///
   /// (Json?) data: Any json data.
   ///
   /// ```
@@ -52,14 +50,13 @@ class SeqLogger {
   static Future<void> addLogToDb({
     required String message,
     LogLevel level = LogLevel.info,
-    String? l,
     Map<String, dynamic>? data,
   }) async {
     var logModel = LogModel(
-      level: level.index,
+      level: _nameOfLevel(level),
       mt: message,
       t: LoggerUtils.getDbTime(),
-      l: l,
+      data: data,
     );
 
     await _LoggerDbProvider.db.insert(logModel: logModel);
@@ -107,7 +104,10 @@ class SeqLogger {
 
     var logs = await _LoggerDbProvider.db.getLogs();
 
-    if (logs.isEmpty) return;
+    if (logs.isEmpty) {
+      log("No logs to sent", name: "SeqLogger");
+      return;
+    }
 
     String dataToSend = "";
     var logsToDelete = <int>[];
@@ -123,9 +123,25 @@ class SeqLogger {
     if (sendResult) {
       // delete sent items from SQLite Db
       var deleteResult = await _LoggerDbProvider.db.deleteLogs(logsToDelete);
-      log("$deleteResult record(s) has been sent", name: "SeqLogger");
+      log("${logs.length} record(s) has been sent, $deleteResult record(s) has been deleted",
+          name: "SeqLogger");
       // re-run to send remaining items.
       sendLogs();
+    }
+  }
+
+  static String _nameOfLevel(LogLevel level) {
+    switch (level) {
+      case LogLevel.info:
+        return "info";
+      case LogLevel.error:
+        return "error";
+      case LogLevel.verbose:
+        return "verbose";
+      case LogLevel.warning:
+        return "warning";
+      default:
+        return "debug";
     }
   }
 }
@@ -140,7 +156,7 @@ class LoggerNetworkProvider {
     dio.options.responseType = ResponseType.json;
     dio.options.contentType = "text/plain";
     if (SeqLogger._apiKey != null && SeqLogger._apiKey!.isNotEmpty) {
-      dio.options.headers.addAll({"X-Api-Key": SeqLogger._apiKey});
+      dio.options.headers.addAll({"X-Seq-ApiKey": SeqLogger._apiKey});
     }
     try {
       final response = await dio.post(SeqLogger._url, data: dataList);
@@ -188,23 +204,17 @@ class _LoggerDbProvider {
   }
 
   /// Method that adds logs to database
-  Future<int> insert(
-      {required LogModel logModel, Map<String, dynamic>? data}) async {
+  Future<int> insert({required LogModel logModel}) async {
     final db = await database;
     if (db == null) return -1;
     try {
       Map<String, dynamic> map = {};
-      if (data == null) {
-        map = logModel.toMap();
-      } else {
-        map = data;
-        map["@t"] = logModel.t;
-        map["@mt"] = logModel.mt;
-        map["level"] = logModel.level;
-        if (logModel.l != null) {
-          map["@l"] = logModel.l;
-        }
-      }
+      logModel.data ??= {};
+      map = logModel.data!;
+      map["@t"] = logModel.t;
+      map["@mt"] = logModel.mt;
+      map["@l"] = logModel.level;
+
       String mapString = json.encode(map);
 
       Map<String, String> dbMap = {
@@ -346,38 +356,30 @@ enum LogLevel {
 class LogModel {
   String t;
   String mt;
-  String? l;
-  int level;
+  String level;
+  Map<String, dynamic>? data;
   LogModel({
     required this.t,
     required this.mt,
-    this.l,
-    this.level = 1,
+    this.level = "debug",
+    this.data,
   });
 
   Map<String, dynamic> toMap() {
-    if (l != null) {
-      return <String, dynamic>{
-        '@t': t,
-        '@mt': mt,
-        'Level': level,
-        '@l': l,
-      };
-    } else {
-      return <String, dynamic>{
-        '@t': t,
-        '@mt': mt,
-        'Level': level,
-      };
-    }
+    return <String, dynamic>{
+      '@t': t,
+      '@mt': mt,
+      '@l': level,
+      'data': data,
+    };
   }
 
   factory LogModel.fromMap(Map<String, dynamic> map) {
     return LogModel(
-      t: map['@t'] as String,
-      mt: map['@mt'] as String,
-      level: map['Level'] as int,
-      l: map['@l'] != null ? map['l'] as String : null,
+      t: map['@t'],
+      mt: map['@mt'],
+      level: map['@l'],
+      data: map['data'],
     );
   }
 }

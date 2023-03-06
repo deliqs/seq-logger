@@ -1,3 +1,9 @@
+## 1.0.6
+* Fixed API_KEY key name in request header
+* Fixed error level in message template
+* Updated packages
+* Changed example project
+
 ## 1.0.5
 * Updated dependencies
 
