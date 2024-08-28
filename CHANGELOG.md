@@ -1,3 +1,6 @@
+## 1.0.7
+* Package and SDK updates
+
 ## 1.0.6
 * Fixed API_KEY key name in request header
 * Fixed error level in message template
